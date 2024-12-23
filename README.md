@@ -1,144 +1,118 @@
-# Internal Live-Chat server
-Live chat server yang dapat digunakan untuk internal perusahaan guna menjaga kerahasiaan serta keamanan perusahaan.
+# Rocket.Chat Installation Guide
 
-## Topologi Arsitektur
-![Topologi Infrastruktur](/img/infra.png)
+## Prerequisites
+- Linux-based system (Ubuntu, Debian, Fedora, etc.)
+- CPU with AVX/AVX2 support
+- Snap package manager
 
-## Deskripsi Projet
-Implementasi server chatting internal berbasis open-source yang aman, scalable, dan mudah dikelola untuk komunikasi perusahaan.
+## Installation Steps
 
-## Service yang Digunakan
-
-### 1. Rocket.Chat
-- **Versi**: 6.x LTS
-- **Deskripsi**: Platform open-source untuk komunikasi tim 
-- **Fitur Utama**:
-  - Obrolan real-time
-  - Saluran pribadi dan umum
-  - Integrasi dengan layanan eksternal
-  - Keamanan end-to-end
-
-### 2. MongoDB
-- **Versi**: 6.0 Community Edition
-- **Deskripsi**: Basis data dokumentasi NoSQL 
-- **Keunggulan**:
-  - Penyimpanan data fleksibel
-  - Performa tinggi
-  - Skalabilitas horizontal
-  - Replikasi otomatis
-
-### 3. Nginx
-- **Versi**: 1.24.x Stable
-- **Deskripsi**: Web server dan reverse proxy
-- **Fungsi**:
-  - Load balancing
-  - Terminasi SSL
-  - Caching
-  - Keamanan lapis aplikasi
-
-### 4. Certbot
-- **Versi**: Latest (0.40.x)
-- **Deskripsi**: Alat manajemen sertifikat Let's Encrypt
-- **Kemampuan**:
-  - Otomatisasi perpanjangan sertifikat
-  - Dukungan HTTPS penuh
-  - Konfigurasi sederhana
-
-### 5. Fail2Ban
-- **Versi**: 0.11.x
-- **Deskripsi**: Sistem pencegahan instrusi
-- **Fitur**:
-  - Blokir IP yang mencurigakan
-  - Perlindungan brute-force
-  - Kustomisasi aturan keamanan
-
-### 6. SSH
-- **Versi**: OpenSSH 8.x
-- **Deskripsi**: Protokol akses jarak jauh
-- **Keamanan**:
-  - Autentikasi kunci publik
-  - Enkripsi koneksi
-  - Pembatasan akses
-
-### 7. Cron
-- **Versi**: Varian Linux standar
-- **Fungsi**:
-  - Backup terjadwal
-  - Manajemen tugas berkala
-  - Pemeliharaan sistem otomatis
-
-## OS yang digunakan
-- CPU: 2 Core
-- RAM: 4 GB
-- Sistem Operasi: Ubuntu 22.04 LTS
-
-## Script Install dengan menggunakan Bash
-
+### 1. Deploy Rocket.Chat
 ```bash
-#!/bin/bash
+# Install specific version
+sudo snap install rocketchat-server --channel=x.x/stable
 
-# Set variabel untuk konfigurasi
-DOMAIN="chat.perusahaan.com"
-ROCKET_VERSION="latest"
-
-# Fungsi untuk menampilkan pesan error
-error_exit() {
-    echo "Error: $1" >&2
-    exit 1
-}
-
-# Pastikan script dijalankan sebagai root
-if [[ $EUID -ne 0 ]]; then
-   error_exit "Script ini harus dijalankan dengan sudo" 
-fi
-
-# Update sistem
-apt update && apt upgrade -y || error_exit "Gagal update sistem"
-
-# Instal dependensi umum
-apt install -y curl wget software-properties-common gnupg2 ca-certificates lsb-release || error_exit "Gagal instal dependensi"
-
-# Instal MongoDB
-wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add - || error_exit "Gagal impor kunci MongoDB"
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-apt update
-apt install -y mongodb-org || error_exit "Gagal instal MongoDB"
-
-# Jalankan dan aktifkan MongoDB
-systemctl start mongod
-systemctl enable mongod
-
-# Instal dependensi Node.js
-curl -fsSL https://deb.nodesource.com/setup_16.x | bash - || error_exit "Gagal setup Node.js"
-apt install -y nodejs || error_exit "Gagal instal Node.js"
-
-# Unduh dan ekstrak Rocket.Chat
-wget https://releases.rocket.chat/${ROCKET_VERSION}/download -O rocket.chat.tar.gz || error_exit "Gagal unduh Rocket.Chat"
-tar -xzf rocket.chat.tar.gz || error_exit "Gagal ekstrak Rocket.Chat"
-
-# Buat direktori dan pengguna
-mkdir -p /opt/Rocket.Chat
-mv bundle/* /opt/Rocket.Chat/
-useradd -M rocketchat
-chown -R rocketchat:rocketchat /opt/Rocket.Chat
-
-# Instal Nginx
-apt install -y nginx || error_exit "Gagal instal Nginx"
-
-# Instal Certbot
-apt install -y certbot python3-certbot-nginx || error_exit "Gagal instal Certbot"
-
-# Instal Fail2Ban
-apt install -y fail2ban || error_exit "Gagal instal Fail2Ban"
-
-# Instal alat backup
-apt install -y mongodb-clients || error_exit "Gagal instal alat backup MongoDB"
-
-# Bersihkan file unduhan
-rm rocket.chat.tar.gz
-
-echo "Instalasi Rocket.Chat Server selesai!"
+# Or install latest version
+sudo snap install rocketchat-server
 ```
 
-## Lisensi
-Open-source dengan lisensi MIT
+Access workspace at `http://localhost:3000`. First user to complete setup wizard becomes administrator.
+
+### 2. Enable HTTPS
+
+#### Option 1: Using Caddy (Recommended)
+1. Ensure domain resolves to server IP
+2. Configure site URL:
+```bash
+sudo snap set rocketchat-server siteurl=https://<your-domain>
+```
+3. Start services:
+```bash
+sudo systemctl enable --now snap.rocketchat-server.rocketchat-caddy
+sudo snap restart rocketchat-server
+```
+
+#### Option 2: Self-Signed SSL with Nginx
+
+1. Generate SSL Certificate:
+```bash
+openssl genrsa -out localhost.key 2048
+openssl req -x509 -new -nodes -key localhost.key -sha256 -days 365 -out localhost.crt
+```
+
+2. Configure Nginx:
+```bash
+sudo mkdir -p /etc/nginx/ssl
+sudo cp localhost.key localhost.crt /etc/nginx/ssl/
+sudo chmod 600 /etc/nginx/ssl/localhost.*
+```
+
+3. Create Nginx configuration in `/etc/nginx/sites-available/rocketchat`
+```nginx
+server {
+    listen 443 ssl;
+    server_name your.domain.com;
+    ssl_certificate /etc/nginx/ssl/localhost.crt;
+    ssl_certificate_key /etc/nginx/ssl/localhost.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Nginx-Proxy true;
+        proxy_redirect off;
+    }
+}
+
+server {
+    listen 80;
+    server_name your.domain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+4. Enable and start Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/rocketchat /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 3. Rate Limiting with Fail2ban
+
+1. Install fail2ban:
+```bash
+sudo apt-get install fail2ban
+```
+
+2. Configure jail in `/etc/fail2ban/jail.local`:
+```ini
+[nginx-limit-req]
+enabled = true
+port = http,https
+filter = nginx-limit-req
+action = iptables-multiport[name=http, port="http,https", protocol=tcp, http-status=429]
+logpath = /var/log/nginx/access.log
+findtime = 3600
+maxretry = 100
+bantime = 3600
+```
+
+## Troubleshooting
+```bash
+# Check Nginx logs
+sudo tail -f /var/log/nginx/error.log
+
+# Verify SSL certificate
+openssl x509 -in /etc/nginx/ssl/localhost.crt -text -noout
+
+# Check Nginx status
+sudo systemctl status nginx
+```
