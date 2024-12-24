@@ -1,6 +1,6 @@
-# Rocket.Chat Installation Guide
-
-<img src="/api/placeholder/800/400" alt="rocket-chat" />
+# Rocket.Chat Installation
+24/12/2024
+<img src="/img/rocket.jpg" alt="rocket-chat" />
 
 A comprehensive guide for installing and configuring Rocket.Chat with HTTPS support.
 
@@ -14,7 +14,7 @@ A comprehensive guide for installing and configuring Rocket.Chat with HTTPS supp
 
 ### Rocket.Chat
 
-<img src="/api/placeholder/800/400" alt="snap-install" />
+<img src="/img/snaps.jpg" alt="snap-install" />
 
 1. Install Rocket.Chat using Snap:
 ```bash
@@ -32,7 +32,7 @@ sudo snap install rocketchat-server
 
 ### HTTPS Setup
 
-<img src="/api/placeholder/800/400" alt="caddy-ssl" />
+<img src="/img/caddy.jpg" alt="caddy-ssl" />
 
 #### Using Caddy (Recommended for 4.x AMD64 or 3.x ARM64)
 
@@ -49,7 +49,7 @@ sudo snap restart rocketchat-server
 
 ### Nginx Reverse Proxy
 
-<img src="/api/placeholder/800/400" alt="nginx" />
+<img src="/img/nginx.jpg" alt="nginx" />
 
 #### SSL Certificate Generation
 1. Generate private key:
@@ -112,7 +112,7 @@ sudo systemctl restart nginx
 
 ### Fail2ban Configuration
 
-<img src="/api/placeholder/800/400" alt="fail2ban" />
+<img src="/img/fail2ban.jpg" alt="fail2ban" />
 
 1. Install Fail2ban:
 ```bash
@@ -134,7 +134,7 @@ bantime = 3600
 
 ### SSH Port Configuration
 
-<img src="/api/placeholder/800/400" alt="ssh" />
+<img src="/img/openssh.jpg" alt="ssh" />
 
 1. Edit SSH configuration:
 ```bash
