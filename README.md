@@ -3,7 +3,13 @@
 <img src="/img/rocket.jpg" alt="rocket-chat" />
 
 A comprehensive guide for installing and configuring Rocket.Chat with HTTPS support.
-
+1. Rocket Chat
+2. Caddy Web Server
+3. MongoDB
+4. Nginx - Reverse Proxy
+5. openssl - SSL
+6. ssh
+7. fail2ban
 ## Prerequisites
 
 - Linux-based system (Ubuntu, Debian, Fedora, etc.)
