@@ -1,57 +1,82 @@
 # Rocket.Chat Installation Guide
 
+<img src="/api/placeholder/800/400" alt="rocket-chat" />
+
+A comprehensive guide for installing and configuring Rocket.Chat with HTTPS support.
+
 ## Prerequisites
+
 - Linux-based system (Ubuntu, Debian, Fedora, etc.)
 - CPU with AVX/AVX2 support
 - Snap package manager
 
 ## Installation Steps
 
-### 1. Deploy Rocket.Chat
-```bash
-# Install specific version
-sudo snap install rocketchat-server --channel=x.x/stable
+### Rocket.Chat
 
-# Or install latest version
+<img src="/api/placeholder/800/400" alt="snap-install" />
+
+1. Install Rocket.Chat using Snap:
+```bash
+sudo snap install rocketchat-server --channel=x.x/stable
+```
+Note: Replace x.x with your desired version (e.g., 6.x/stable)
+
+For the latest version:
+```bash
 sudo snap install rocketchat-server
 ```
 
-Access workspace at `http://localhost:3000`. First user to complete setup wizard becomes administrator.
+2. Access your workspace at `http://localhost:3000`
+   - First user to complete setup wizard becomes administrator
 
-### 2. Enable HTTPS
+### HTTPS Setup
 
-#### Option 1: Using Caddy (Recommended)
-1. Ensure domain resolves to server IP
-2. Configure site URL:
+<img src="/api/placeholder/800/400" alt="caddy-ssl" />
+
+#### Using Caddy (Recommended for 4.x AMD64 or 3.x ARM64)
+
+1. Configure domain resolution
+2. Set site URL:
 ```bash
 sudo snap set rocketchat-server siteurl=https://<your-domain>
 ```
-3. Start services:
+3. Enable services:
 ```bash
 sudo systemctl enable --now snap.rocketchat-server.rocketchat-caddy
 sudo snap restart rocketchat-server
 ```
 
-#### Option 2: Self-Signed SSL with Nginx
+### Nginx Reverse Proxy
 
-1. Generate SSL Certificate:
+<img src="/api/placeholder/800/400" alt="nginx" />
+
+#### SSL Certificate Generation
+1. Generate private key:
 ```bash
 openssl genrsa -out localhost.key 2048
+```
+
+2. Create SSL certificate:
+```bash
 openssl req -x509 -new -nodes -key localhost.key -sha256 -days 365 -out localhost.crt
 ```
 
-2. Configure Nginx:
+#### Nginx Configuration
+
+1. Create SSL directory and copy certificates:
 ```bash
 sudo mkdir -p /etc/nginx/ssl
 sudo cp localhost.key localhost.crt /etc/nginx/ssl/
 sudo chmod 600 /etc/nginx/ssl/localhost.*
 ```
 
-3. Create Nginx configuration in `/etc/nginx/sites-available/rocketchat`
+2. Create and configure Nginx site:
 ```nginx
 server {
     listen 443 ssl;
     server_name your.domain.com;
+
     ssl_certificate /etc/nginx/ssl/localhost.crt;
     ssl_certificate_key /etc/nginx/ssl/localhost.key;
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -78,21 +103,23 @@ server {
 }
 ```
 
-4. Enable and start Nginx:
+3. Enable and start Nginx:
 ```bash
-sudo ln -s /etc/nginx/sites-available/rocketchat /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/reverse-proxy /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### 3. Rate Limiting with Fail2ban
+### Fail2ban Configuration
 
-1. Install fail2ban:
+<img src="/api/placeholder/800/400" alt="fail2ban" />
+
+1. Install Fail2ban:
 ```bash
 sudo apt-get install fail2ban
 ```
 
-2. Configure jail in `/etc/fail2ban/jail.local`:
+2. Configure jail settings in `/etc/fail2ban/jail.local`:
 ```ini
 [nginx-limit-req]
 enabled = true
@@ -105,14 +132,38 @@ maxretry = 100
 bantime = 3600
 ```
 
-## Troubleshooting
+### SSH Port Configuration
+
+<img src="/api/placeholder/800/400" alt="ssh" />
+
+1. Edit SSH configuration:
 ```bash
-# Check Nginx logs
-sudo tail -f /var/log/nginx/error.log
-
-# Verify SSL certificate
-openssl x509 -in /etc/nginx/ssl/localhost.crt -text -noout
-
-# Check Nginx status
-sudo systemctl status nginx
+sudo nano /etc/ssh/sshd_config
 ```
+Change port to 2222:
+```plaintext
+Port 2222
+```
+
+2. Update firewall rules:
+```bash
+sudo ufw allow 2222/tcp
+sudo ufw deny 22/tcp
+```
+
+3. Restart SSH service:
+```bash
+sudo systemctl restart ssh
+```
+
+## Troubleshooting
+
+### Nginx
+- Check error logs: `sudo tail -f /var/log/nginx/error.log`
+- Verify SSL certificate: `openssl x509 -in /etc/nginx/ssl/localhost.crt -text -noout`
+- Check service status: `sudo systemctl status nginx`
+
+## Additional Notes
+- Always maintain backup SSH access when changing SSH port
+- Update hosts file: Add `<ip> <domain>` to `/etc/hosts`
+- Use strong passwords and SSH keys for enhanced security
